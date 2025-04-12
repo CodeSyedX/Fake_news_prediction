@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>📰 Fake News Detector</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+      max-width: 700px;
+      margin: auto;
+      padding: 40px 20px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    textarea {
+      width: 100%;
+      height: 150px;
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      resize: vertical;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    #factCheckResults {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+    .fact {
+      margin-bottom: 15px;
+    }
+    .fact a {
+      color: #007BFF;
+      text-decoration: none;
+    }
+    .fact a:hover {
+      text-decoration: underline;
+    }
+    hr {
+      border: 0;
+      height: 1px;
+      background: #eee;
+    }
+  </style>
+</head>
+<body>
+  <h2>📰 Fake News Detector</h2>
+  <textarea id="newsText" placeholder="Paste your news article here..."></textarea>
+  <button onclick="checkFakeNews()">Check News</button>
+  <div id="result"></div>
+  <div id="factCheckResults"></div>
+
+  <script>
+    async function checkFakeNews() {
+      const text = document.getElementById("newsText").value.trim();
+      const resultDiv = document.getElementById("result");
+      const factCheckDiv = document.getElementById("factCheckResults");
+
+      if (!text) {
+        resultDiv.innerText = "⚠️ Please enter some text.";
+        factCheckDiv.innerHTML = "";
+        return;
+      }
+
+      resultDiv.innerText = "🔍 Checking...";
+      factCheckDiv.innerHTML = "";
+
+      try {
+        const response = await fetch("http://127.0.0.1:5000/predict", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ text })
+        });
+
+        const data = await response.json();
+
+        resultDiv.innerText = `🧠 Prediction: ${data.prediction}`;
+
+        // Show fact-check results
+        if (Array.isArray(data.fact_check)) {
+          factCheckDiv.innerHTML = "<h4>🧐 Fact-Check Results:</h4>";
+          data.fact_check.forEach(fact => {
+            factCheckDiv.innerHTML += `
+              <div class="fact">
+                🔹 <strong>Claim:</strong> ${fact.claim}<br>
+                🔸 <strong>Rating:</strong> ${fact.rating}<br>
+                📰 <strong>Publisher:</strong> ${fact.publisher}<br>
+                🔗 <a href="${fact.url}" target="_blank">Read more</a>
+              </div>
+              <hr />
+            `;
+          });
+        } else {
+          factCheckDiv.innerHTML = `<div>⚠️ ${data.fact_check}</div>`;
+        }
+
+      } catch (err) {
+        console.error(err);
+        resultDiv.innerText = "❌ Error connecting to the backend.";
+        factCheckDiv.innerHTML = "";
+      }
+    }
+  </script>
+</body>
+</html>
